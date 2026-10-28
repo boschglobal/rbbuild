@@ -186,6 +186,148 @@ def test_pkg_info_no_optional_requirements_no_provides_extra():
 
 
 # ---------------------------------------------------------------------------
+# _generate_pkg_info — [project] table fields
+# ---------------------------------------------------------------------------
+
+def test_pkg_info_readme_table_sets_content_type_and_body(tmp_path):
+    (tmp_path / 'README.md').write_text('# Title\n\nBody\n', encoding='utf-8')
+    m = _make_metadata()
+    project = {'readme': {'file': 'README.md', 'content-type': 'text/markdown'}}
+    result = _generate_pkg_info(
+        m.name, m.version, m, project=project, source_dir=tmp_path)
+    headers, body = result.split('\n\n', 1)
+    assert 'Description-Content-Type: text/markdown' in headers
+    assert body == '# Title\n\nBody\n'
+
+
+def test_pkg_info_readme_string_infers_content_type(tmp_path):
+    (tmp_path / 'README.rst').write_text('Title\n=====\n', encoding='utf-8')
+    m = _make_metadata()
+    result = _generate_pkg_info(
+        m.name, m.version, m, project={'readme': 'README.rst'},
+        source_dir=tmp_path)
+    assert 'Description-Content-Type: text/x-rst' in result
+
+
+def test_pkg_info_readme_text_table(tmp_path):
+    m = _make_metadata()
+    project = {'readme': {'text': 'Hello', 'content-type': 'text/plain'}}
+    result = _generate_pkg_info(
+        m.name, m.version, m, project=project, source_dir=tmp_path)
+    assert result.endswith('\n\nHello')
+
+
+def test_pkg_info_readme_suffix_is_case_insensitive(tmp_path):
+    (tmp_path / 'README.MD').write_text('# T\n', encoding='utf-8')
+    m = _make_metadata()
+    result = _generate_pkg_info(
+        m.name, m.version, m, project={'readme': 'README.MD'},
+        source_dir=tmp_path)
+    assert 'Description-Content-Type: text/markdown' in result
+
+
+@pytest.mark.parametrize('readme', [
+    'README',
+    'README.adoc',
+    {'file': 'README', 'content-type': 'text/html'},
+    {'file': 'README.md', 'content-type': 'text/markdown; charset=latin-1'},
+    {'file': 'README.md'},
+    {'text': 'Hello'},
+    {'file': 'README.md', 'text': 'Hello', 'content-type': 'text/plain'},
+    {'content-type': 'text/plain'},
+])
+def test_pkg_info_invalid_readme_raises(tmp_path, readme):
+    (tmp_path / 'README').write_text('x', encoding='utf-8')
+    m = _make_metadata()
+    with pytest.raises(ValueError, match='readme'):
+        _generate_pkg_info(
+            m.name, m.version, m, project={'readme': readme},
+            source_dir=tmp_path)
+
+
+def test_pkg_info_readme_content_type_parameters_accepted(tmp_path):
+    (tmp_path / 'README.md').write_text('# T\n', encoding='utf-8')
+    m = _make_metadata()
+    project = {'readme': {
+        'file': 'README.md', 'content-type': 'text/markdown; charset=UTF-8; variant=GFM'}}
+    result = _generate_pkg_info(
+        m.name, m.version, m, project=project, source_dir=tmp_path)
+    assert 'Description-Content-Type: text/markdown; charset=UTF-8; variant=GFM' in result
+
+
+def test_pkg_info_missing_readme_file_is_skipped(tmp_path):
+    m = _make_metadata()
+    result = _generate_pkg_info(
+        m.name, m.version, m, project={'readme': 'README.md'},
+        source_dir=tmp_path)
+    assert 'Description-Content-Type' not in result
+    assert result.endswith('\n') and not result.endswith('\n\n')
+
+
+def test_pkg_info_no_readme_has_no_body():
+    m = _make_metadata()
+    result = _generate_pkg_info(m.name, m.version, m)
+    assert 'Description-Content-Type' not in result
+    assert '\n\n' not in result
+
+
+def test_pkg_info_project_fields():
+    m = _make_metadata()
+    project = {
+        'requires-python': '>= 3.14',
+        'keywords': ['build', 'tool'],
+        'classifiers': ['Topic :: Software Development', 'Intended Audience :: Developers'],
+        'urls': {'Source Code': 'https://example.com/src', 'Bug-Tracker': 'https://example.com/bugs'},
+    }
+    result = _generate_pkg_info(m.name, m.version, m, project=project)
+    assert 'Requires-Python: >= 3.14' in result
+    assert 'Keywords: build,tool' in result
+    assert 'Classifier: Topic :: Software Development' in result
+    assert 'Classifier: Intended Audience :: Developers' in result
+    assert 'Project-URL: Source Code, https://example.com/src' in result
+    assert 'Project-URL: Bug-Tracker, https://example.com/bugs' in result
+
+
+def test_pkg_info_project_fields_omitted_when_absent():
+    m = _make_metadata()
+    result = _generate_pkg_info(m.name, m.version, m, project={})
+    for header in ('Requires-Python', 'Keywords', 'Classifier', 'Project-URL'):
+        assert header not in result
+
+
+def test_build_wheel_metadata_contains_readme(tmp_path, monkeypatch):
+    sdist_dir, cs = _setup_build(tmp_path, monkeypatch)
+    (tmp_path / 'README.md').write_text('# Hello\n', encoding='utf-8')
+    pypa = cs['rbbuild_python_backend']
+    pypa.paths.source = tmp_path
+    pypa.pyproject_toml = {'project': {
+        'readme': {'file': 'README.md', 'content-type': 'text/markdown'},
+        'requires-python': '>= 3.14',
+    }}
+    name = build_wheel(wheel_directory=sdist_dir, config_settings=cs)
+    with zipfile.ZipFile(sdist_dir / name) as zf:
+        metadata = zf.read('mypkg-1.2.3.4.dist-info/METADATA').decode()
+    assert 'Description-Content-Type: text/markdown' in metadata
+    assert 'Requires-Python: >= 3.14' in metadata
+    assert metadata.endswith('\n\n# Hello\n')
+
+
+def test_build_sdist_pkg_info_contains_readme(tmp_path, monkeypatch):
+    sdist_dir, cs = _setup_build(tmp_path, monkeypatch)
+    (tmp_path / 'README.md').write_text('# Hello\n', encoding='utf-8')
+    pypa = cs['rbbuild_python_backend']
+    pypa.paths.source = tmp_path
+    pypa.pyproject_toml = {'project': {'readme': 'README.md'}}
+    pypa.requirements = []
+    pypa.packaging.items.return_value = []
+    name = build_sdist(sdist_directory=sdist_dir, config_settings=cs)
+    with tarfile.open(sdist_dir / name) as tar:
+        pkg_info = tar.extractfile('mypkg-1.2.3.4/PKG-INFO').read().decode()
+    assert 'Description-Content-Type: text/markdown' in pkg_info
+    assert pkg_info.endswith('\n\n# Hello\n')
+
+
+# ---------------------------------------------------------------------------
 # build_sdist — raises without rbbuild backend
 # ---------------------------------------------------------------------------
 

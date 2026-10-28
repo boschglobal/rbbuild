@@ -176,6 +176,7 @@ def build_sdist(sdist_directory, config_settings=None):
     pkg_info_bytes = _generate_pkg_info(
         name, version, pypa.metadata, _wheel_requirements(pypa, cname, comp, version),
         pypa.optional_requirements,
+        pypa.pyproject_toml.get('project', {}), pypa.paths.source,
     ).encode('utf-8')
 
     with tarfile.open(sdist_path, 'w:gz') as tar:
@@ -222,6 +223,7 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
     metadata_bytes = _generate_pkg_info(
         name, version, pypa.metadata, _wheel_requirements(pypa, cname, comp, version),
         pypa.optional_requirements,
+        pypa.pyproject_toml.get('project', {}), pypa.paths.source,
     ).encode('utf-8')
     wheel_bytes = (
         'Wheel-Version: 1.0\n'
@@ -299,7 +301,7 @@ def build_editable(wheel_directory, config_settings=None, metadata_directory=Non
 
     metadata_bytes = _generate_pkg_info(
         name, version, _ProjectMetadata(project), project.get('dependencies'),
-        project.get('optional-dependencies'),
+        project.get('optional-dependencies'), project, project_root,
     ).encode('utf-8')
     wheel_bytes = (
         'Wheel-Version: 1.0\n'
@@ -340,12 +342,67 @@ def build_editable(wheel_directory, config_settings=None, metadata_directory=Non
     return whl_path.name
 
 
+_README_CONTENT_TYPES = {
+    '.md':  'text/markdown',
+    '.rst': 'text/x-rst',
+    '.txt': 'text/plain',
+}
+
+
+# Only UTF-8 is supported; it is the default when no charset is given.
+def _check_readme_content_type(content_type):
+    media_type, *params = [p.strip() for p in content_type.split(';')]
+    if media_type.lower() not in _README_CONTENT_TYPES.values():
+        raise ValueError(f'[project] readme: unsupported content-type "{content_type}"')
+    for param in params:
+        key, _, value = param.partition('=')
+        if key.strip().lower() == 'charset' and value.strip().lower() != 'utf-8':
+            raise ValueError(f'[project] readme: unsupported charset in "{content_type}"')
+
+
+# Returns (content type, text) for [project].readme (PEP 621), or None if
+# there is no readme or its file does not exist.
+def _read_readme(readme, source_dir):
+    if not readme:
+        return None
+
+    if isinstance(readme, str):
+        suffix = Path(readme).suffix.lower()
+        if suffix not in _README_CONTENT_TYPES:
+            raise ValueError(
+                f'[project] readme "{readme}": unrecognized suffix, '
+                'use a table with content-type')
+        readme = {'file': readme, 'content-type': _README_CONTENT_TYPES[suffix]}
+
+    if ('file' in readme) == ('text' in readme):
+        raise ValueError('[project] readme: specify exactly one of file and text')
+    if 'content-type' not in readme:
+        raise ValueError('[project] readme: content-type is required')
+
+    content_type = readme['content-type']
+    _check_readme_content_type(content_type)
+    if 'text' in readme:
+        return content_type, readme['text']
+
+    path = Path(source_dir) / readme['file']
+    if not path.is_file():
+        return None
+    return content_type, path.read_text(encoding='utf-8')
+
+
 # Generates a PEP 566 / Core Metadata 2.1 PKG-INFO string from a Metadata object.
 # requirements: optional list of PEP 508 dependency strings written as Requires-Dist headers.
 # optional_requirements: optional {extra_name: [PEP 508 strings]} from
 # [project.optional-dependencies], written as Provides-Extra/Requires-Dist
 # with an `extra ==` marker (PEP 566/508).
-def _generate_pkg_info(name: str, version: str, metadata, requirements=None, optional_requirements=None) -> str:
+# project: raw [project] table (PEP 621) for readme, keywords, classifiers,
+# urls and requires-python; its keys must keep their hyphens and labels.
+# source_dir: directory against which project.readme is resolved.
+def _generate_pkg_info(
+    name: str, version: str, metadata, requirements=None,
+    optional_requirements=None, project=None, source_dir=None,
+) -> str:
+    project = project or {}
     lines = [
         'Metadata-Version: 2.1',
         f'Name: {name}',
@@ -355,6 +412,22 @@ def _generate_pkg_info(name: str, version: str, metadata, requirements=None, opt
     description = metadata.config.get('description', '').strip()
     if description:
         lines.append(f'Summary: {description}')
+
+    readme = _read_readme(project.get('readme'), source_dir)
+    if readme:
+        lines.append(f'Description-Content-Type: {readme[0]}')
+
+    if project.get('keywords'):
+        lines.append('Keywords: ' + ','.join(project['keywords']))
+
+    for classifier in project.get('classifiers', []):
+        lines.append(f'Classifier: {classifier}')
+
+    for label, url in project.get('urls', {}).items():
+        lines.append(f'Project-URL: {label}, {url}')
+
+    if project.get('requires-python'):
+        lines.append(f'Requires-Python: {project["requires-python"]}')
 
     for author in metadata.authors:
         aname  = author.get('name',  '').strip()
@@ -391,5 +464,9 @@ def _generate_pkg_info(name: str, version: str, metadata, requirements=None, opt
         for req in reqs:
             lines.append(f'Requires-Dist: {req}; extra == "{extra_name}"')
 
-    return '\n'.join(lines) + '\n'
+    pkg_info = '\n'.join(lines) + '\n'
+    if readme:
+        # The message body carries the long description.
+        pkg_info += '\n' + readme[1]
+    return pkg_info
 

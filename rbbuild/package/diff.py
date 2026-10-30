@@ -61,7 +61,7 @@ class PackageDiff:
                 cmp_res.state = CompareState.MOVED
 
             # Only traverse dependencies if we're in CHANGED or MOVED state
-            if traverse_deps and pkg_a.dependencies:
+            if traverse_deps:
                 cmp_res.dependencies = []
                 for pkgid, pkg_a_dep in pkg_a.dependencies.items():
                     pkg_b_dep = None

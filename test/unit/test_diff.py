@@ -127,6 +127,26 @@ def test_compare_changed_new_dep_in_b():
     assert new_dep.pkg_b is dep_new
 
 
+@pytest.mark.parametrize('namespace', ['', 'moved'])
+@pytest.mark.parametrize('names', [['newdep'], ['newdep', 'other']])
+def test_compare_reports_first_dependencies_added_to_package(namespace, names):
+    diff = _diff()
+    added = {name: _make_pkg(name, '1.0.0') for name in names}
+    a = _make_pkg('nng', '1.0.0', dependencies={})
+    b = _make_pkg('nng', '2.0.0', namespace=namespace,
+                  dependencies=added)
+
+    result = diff.compare(a, b, traverse_deps=True)
+
+    expected_state = CompareState.MOVED if namespace else CompareState.CHANGED
+    assert result.state == expected_state
+    assert len(result.dependencies) == len(added)
+    for child, package in zip(result.dependencies, added.values()):
+        assert child.state == CompareState.NEW
+        assert child.pkg_a is None
+        assert child.pkg_b is package
+
+
 def test_compare_changed_no_traverse_skips_deps():
     diff = _diff()
     a = _make_pkg('nng', '1.0.0', dependencies={'dep@tc': _make_pkg('dep', '1.0')})

@@ -51,7 +51,7 @@ def test_default_project_dir(rbbconf, tmp_path):
     assert 'fake_artifactory' in cons_out
     for line in cons_out.split('\n'):
         if line.strip().startswith('fake_artifactory'):
-            sname, stype, url = line.split()
+            sname, stype, url = line.split(maxsplit=2)
             assert sname == 'fake_artifactory'
             assert stype == 'local_file_service'
             assert url.startswith('file:')

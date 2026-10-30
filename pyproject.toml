@@ -73,7 +73,7 @@ dev = [
     'requests-mock>=1.12.1',
     'pytest>=9.0',
     'pytest-cov>=7.1',
-    'cyclonedx-python-lib>=0.7.1',
+    'cyclonedx-python-lib[json-validation]>=0.7.1',
 ]
 
 

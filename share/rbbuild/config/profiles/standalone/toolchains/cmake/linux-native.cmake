@@ -46,7 +46,7 @@ set(CMAKE_CXX_FLAGS_DEBUG   "-ggdb" CACHE STRING "" FORCE)
 # --hash-style=gnu: use faster GNU style hash table structures
 # -rpath=...: set a default runtime path for linking executables
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-O1,--hash-style=gnu")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,${CMAKE_STAGING_PREFIX}/usr/lib")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \"-Wl,-rpath,${CMAKE_STAGING_PREFIX}/usr/lib\"")
 
 # security flag: use -fPIE to improve security
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)

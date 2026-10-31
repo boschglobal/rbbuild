@@ -27,7 +27,15 @@ def test_missing_repository_is_empty(pkq_empty, user_home_empty):
 
 
 @_skip_without_toolchain
-def test_publish_and_list(rbbuild_empty, pkq_empty, user_home_empty):
+@pytest.mark.parametrize('spaces_in_path', [False, True])
+def test_publish_and_list(
+    rbbuild_empty, pkq_empty, user_home_empty, spaces_in_path,
+):
+    if spaces_in_path:
+        workdir = (rbbuild_empty.workdir.parent / 'checkout with spaces'
+                   / 'project')
+        workdir.mkdir(parents=True)
+        rbbuild_empty.workdir = workdir
     (rbbuild_empty.workdir / 'main.cc').write_text('int main() {return 0;}')
 
     rbbuild_empty.run(['-g', '.'])

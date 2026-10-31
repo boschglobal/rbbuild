@@ -48,7 +48,7 @@ set(CMAKE_CXX_FLAGS_DEBUG   "-ggdb" CACHE STRING "" FORCE)
 # -O1: enable linker optimization
 # -rpath=...: set a default runtime path for linking executables
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed,-O1")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,${CMAKE_STAGING_PREFIX}/usr/lib")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \"-Wl,-rpath,${CMAKE_STAGING_PREFIX}/usr/lib\"")
 
 # security flag: use -fPIE to improve security
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)

@@ -5,7 +5,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import json
 import requests
 
 from fnmatch import fnmatch
@@ -171,31 +170,7 @@ class Artifactory(Repository):
 
 
     def _generate_plain_manifest(self, name: str, version: str) -> Path:
-        manifest_data = {
-            'json_version': 5,
-            'package': {
-                'version_package': name,
-                'version_string': version,
-                'components': [],
-            }
-        }
-        remote_files = self.list_files(name, version)
-        for filename, checksum in remote_files:
-            suffix = None
-            if '.' in filename:
-                _, suffix = filename.rsplit('.', maxsplit=1)
-            manifest_data['package']['components'].append({
-                'name':     filename,
-                'suffix':   suffix,
-                'filename': filename,
-                'checksum': checksum,
-            })
-
-        localfile = self.tmpdir / f'{name}-{version}-manifest.json'
-        with open(localfile, 'w') as fd:
-            json.dump(manifest_data, fd, indent=4)
-
-        return localfile
+        return self.plain_manifest(name, version, self.list_files(name, version))
 
 
     def get_versions(self, name: str) -> List[str]:

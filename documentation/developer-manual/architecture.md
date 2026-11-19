@@ -269,10 +269,15 @@ mytype = 'mypackage.myrepo:MyRepository'
   `user`, `credentials`, `op_mode`, and `truststore` (from `truststore` of the remote
   service, `False` if undefined). Plugins must accept `truststore` and pass it to
   `Repository.__init__`; HTTP requests must be sent with `self.session` to honor it.
+* If `__init__` declares an `options` parameter, it also receives the entries of the
+  `[profile.services.<name>]` table (e.g., `region`). If it declares `user_options`, it
+  receives the entries of `[service.<name>]` in the user configuration (e.g., `refresh-token`),
+  which also contain `user` and `credentials`.
 * Optionally, the class attribute `display_name` is shown in the GUI.
 * If a profile refers to a service type that no installed package provides, rbbuild
   reports that the service type is not available.
-* Built-in types (`artifactory`, `local_file_service`, `url`) cannot be replaced.
+* Built-in types (`artifactory`, `local_file_service`, `s3`, `google_drive`, `url`) cannot
+  be replaced.
 
 ## Minimal plugin example
 

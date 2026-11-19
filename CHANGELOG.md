@@ -12,6 +12,7 @@ SPDX-License-Identifier: MIT
  - Added the dependency attribute `localversion=<name>` (also usable with `pkq`) to select only
   package versions with the given PEP 440 local version, e.g., `mypkg localversion=rbbuild.1234`
   for development packages built from the branch `RBBUILD-1234-my-ticket`.
+- Added support for Google Drive, Amazon S3 and compatible services
 
 
 # Version 6.0 (released 2026-10-28)

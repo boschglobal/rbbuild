@@ -13,6 +13,32 @@ from urllib.parse import urlparse
 from rbbuild.librbb.term import term
 
 
+# File-like request body that reports progress. Its length makes requests
+# send a Content-Length header instead of chunked transfer encoding.
+class _ProgressReader:
+    def __init__(self, fd, size: int, progress_cb: Callable[[int, int], None]):
+        self._fd = fd
+        self._size = size
+        self._nread = 0
+        self._progress_cb = progress_cb
+
+
+    def __len__(self) -> int:
+        return self._size
+
+
+    def __iter__(self):
+        while chunk := self.read(65536):
+            yield chunk
+
+
+    def read(self, size: int = -1) -> bytes:
+        chunk = self._fd.read(size)
+        self._nread += len(chunk)
+        self._progress_cb(self._nread, self._size)
+        return chunk
+
+
 class RESTHelper:
     def __init__(
         self,
@@ -32,12 +58,13 @@ class RESTHelper:
         headers: dict,
         auth,
         missing_ok: bool = False,
+        filename: str = None,
     ) -> Optional[Path]:
         if not url:
             raise RuntimeError('Cannot download file (url missing)')
 
         urlp = urlparse(url)
-        localfile = self.tmpdir / Path(urlp.path).name
+        localfile = self.tmpdir / (filename or Path(urlp.path).name)
 
         with self.session.get(url=url, headers=headers, auth=auth, stream=True) as resp:
             if not resp.ok:
@@ -85,4 +112,20 @@ class RESTHelper:
                 data=_chunked_file_reader(fd, self.CHUNK_BLOCK_SIZE),
             )
             resp.raise_for_status()
+
+
+    # PUT with Content-Length. The response is returned unchecked, so that
+    # callers can map status codes (e.g., conflicts) themselves.
+    def put_file(
+        self,
+        localfile: Path,
+        url: str,
+        headers: dict,
+        auth,
+    ) -> requests.Response:
+        size = localfile.stat().st_size
+        with open(localfile, 'rb') as fd:
+            # An empty stream body would be sent chunked
+            data = _ProgressReader(fd, size, self.progress_cb) if size else b''
+            return self.session.put(url=url, headers=headers, auth=auth, data=data)
 

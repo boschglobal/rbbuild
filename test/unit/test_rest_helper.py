@@ -14,7 +14,7 @@ from rbbuild.package.package import Package
 from rbbuild.service.remote_service import AuthMethod
 from rbbuild.service.repository.artifactory import Artifactory
 from rbbuild.service.repository.url_service import URLService
-from rbbuild.service.rest_helper import RESTHelper
+from rbbuild.service.rest_helper import RESTHelper, _ProgressReader
 
 _URL = 'https://example.test/artifactory/repo/pkg/1.0/file.tar.xz'
 _ANY_URL = re.compile(r'^https://example\.test/')
@@ -76,6 +76,58 @@ def test_download_file_uses_given_session(tmp_path):
     helper.download_file(_URL, headers={}, auth=None)
 
     session.get.assert_called_once()
+
+
+def test_download_file_uses_given_filename(tmp_path, requests_mock):
+    requests_mock.get('https://example.test/files/abc123', content=b'data')
+
+    result = _helper(tmp_path).download_file(
+        'https://example.test/files/abc123?alt=media',
+        headers={}, auth=None, filename='pkg-1.0.tar')
+
+    assert result == tmp_path / 'pkg-1.0.tar'
+    assert result.read_bytes() == b'data'
+
+
+# put_file sends a Content-Length instead of chunked transfer encoding and
+# leaves status handling to the caller.
+def test_put_file_sends_content_length(tmp_path, requests_mock):
+    put = requests_mock.put(_URL, status_code=409)
+    localfile = tmp_path / 'file.tar.xz'
+    localfile.write_bytes(b'data')
+    helper = _helper(tmp_path)
+
+    resp = helper.put_file(localfile, _URL, headers={'x-test': '1'}, auth=None)
+
+    assert resp.status_code == 409
+    assert put.last_request.headers['Content-Length'] == '4'
+    assert 'Transfer-Encoding' not in put.last_request.headers
+    assert put.last_request.headers['x-test'] == '1'
+
+
+def test_progress_reader_reports_progress(tmp_path):
+    localfile = tmp_path / 'file'
+    localfile.write_bytes(b'abcdef')
+    progress = []
+
+    with open(localfile, 'rb') as fd:
+        reader = _ProgressReader(fd, 6, lambda done, total: progress.append((done, total)))
+        assert len(reader) == 6
+        assert reader.read(4) == b'abcd'
+        assert b''.join(reader) == b'ef'
+
+    assert progress[:2] == [(4, 6), (6, 6)]
+
+
+def test_put_file_of_empty_file_has_content_length(tmp_path, requests_mock):
+    put = requests_mock.put(_URL)
+    localfile = tmp_path / 'empty'
+    localfile.write_bytes(b'')
+
+    _helper(tmp_path).put_file(localfile, _URL, headers={}, auth=None)
+
+    assert put.last_request.headers['Content-Length'] == '0'
+    assert 'Transfer-Encoding' not in put.last_request.headers
 
 
 # ---------------------------------------------------------------------------

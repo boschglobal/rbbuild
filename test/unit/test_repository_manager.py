@@ -534,6 +534,26 @@ def test_service_auth_method_undefined_is_none():
     assert provider.call_args.kwargs['auth_method'] == AuthMethod.NONE
 
 
+def test_service_truststore_undefined_is_false():
+    provider = MagicMock()
+    repoman = _make_repoman_for_service(
+        {'svc': {'type': 'plugintype', 'url': 'https://x/'}},
+        plugintype=provider,
+    )
+    repoman.service(MagicMock(remote_service='svc'))
+    assert provider.call_args.kwargs['truststore'] is False
+
+
+def test_service_passes_truststore_from_config():
+    provider = MagicMock()
+    repoman = _make_repoman_for_service(
+        {'svc': {'type': 'plugintype', 'url': 'https://x/', 'truststore': True}},
+        plugintype=provider,
+    )
+    repoman.service(MagicMock(remote_service='svc'))
+    assert provider.call_args.kwargs['truststore'] is True
+
+
 def test_service_unavailable_type_raises_lookup_error():
     repoman = _make_repoman_for_service({'svc': {'type': 'csi', 'url': 'https://x/'}})
     channel = MagicMock(remote_service='svc')

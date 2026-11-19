@@ -5,8 +5,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import requests
-
 from typing import Iterator
 
 from rbbuild.service.remote_service import AuthMethod
@@ -23,6 +21,7 @@ class Bitbucket(GitRepository):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         GitRepository.__init__(
             self,
@@ -30,6 +29,7 @@ class Bitbucket(GitRepository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.project = project
         self.repository = repository
@@ -43,7 +43,7 @@ class Bitbucket(GitRepository):
             url += f'&until={until}'
 
         headers = {**self.headers, 'Content-Type': 'application/json'}
-        resp = requests.get(url=url, headers=headers, auth=self.auth)
+        resp = self.session.get(url=url, headers=headers, auth=self.auth)
 
         # resp.raise_for_status()
         if resp.ok:
@@ -68,7 +68,7 @@ class Bitbucket(GitRepository):
             'startPoint': commit_hash
         }
 
-        resp = requests.post(url=url, headers=headers, auth=self.auth, json=payload)
+        resp = self.session.post(url=url, headers=headers, auth=self.auth, json=payload)
 
         if resp.status_code == 201:
             return True

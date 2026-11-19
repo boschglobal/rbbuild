@@ -23,6 +23,7 @@ def _make_artifactory(force=False, dry_run=False):
     repo.channel = MagicMock(repository='myrepo', root_path='', name='development')
     repo.headers = {}
     repo.auth = None
+    repo.session = MagicMock()
     repo.url = 'https://example.test/'
     repo.tmpdir = None
     repo.progress_cb = None

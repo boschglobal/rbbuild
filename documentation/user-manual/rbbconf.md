@@ -190,6 +190,7 @@ overrides the shared one.
 |                              | type                         | artifactory                      | Valid values: artifactory, local\_file\_service, github, bitbucket, jira, jenkins, fossid, or a type provided by a plugin package |
 |                              | url                          | https://path.to/                 | Service URL                                             |
 |                              | auth-method                  | bearer-token                     | none (default), basic, or bearer-token. See below       |
+|                              | truststore                   | true                             | (Optional) Verify TLS certificates with the operating system trust store. Default: false |
 |                              | credentials                  | AKCp.....i9m                     | Used as APIKEY or password. Only in user config!        |
 |                              | user                         | jdoe                             | (Optional) e.g., for services that rely on basic auth   |
 
@@ -202,6 +203,11 @@ The entry *auth-method* defines how rbbuild authenticates at the service, using 
 authentication is used (`none`). With `bearer-token`, the credentials are sent as bearer
 token, or as basic authentication if a *user* is set. With `basic`, *user* and *credentials*
 are sent as basic authentication.
+
+With `truststore = true`, rbbuild verifies the TLS certificate of the service with the trust
+store of the operating system (using the Python `truststore` module) instead of the CA bundle
+shipped with Python. Use this for services that rely on corporate CA certificates.
+
 The remote service TOML file name can be freely chosen, however, it is good
 practice to use `<service-name>.toml` as file name to avoid clashes with other
 profiles.

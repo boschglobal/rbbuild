@@ -140,6 +140,7 @@ class LocalFileService(LocalFileStorage, Repository):
         manifest: Manifest,
         temp_folder: TempFolder,
         op_mode: OperationMode,
+        truststore: bool,
     ):
         Repository.__init__(
             self,
@@ -150,6 +151,7 @@ class LocalFileService(LocalFileStorage, Repository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
 
         u = urlparse(url)

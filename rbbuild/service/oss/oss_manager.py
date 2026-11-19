@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from rbbuild.service.oss.fossid import FossID
-from rbbuild.service.remote_service import AuthMethod
+from rbbuild.service.remote_service import AuthMethod, truststore_from_config
 
 
 # Facade for Open Source Scanner (OSS) services (e.g., FossID).
@@ -60,6 +60,7 @@ class OSSManager:
             auth_method=AuthMethod.from_config(service_config, service_id),
             user=user.get('user'),
             credentials=user.get('credentials'),
+            truststore=truststore_from_config(service_config, service_id),
             project_org_prefix=config.get('project_org_prefix', ''),
         )
 

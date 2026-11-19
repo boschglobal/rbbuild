@@ -5,6 +5,12 @@ SPDX-FileContributor: Tolga Dalman
 SPDX-License-Identifier: MIT
 -->
 
+# Version 6.1 (not yet released)
+
+- Remote services can use the operating system trust store (corporate CA certificates) with
+ `truststore = true` entry of `[profile.services.NAME]`.
+
+
 # Version 6.0 (released 2026-10-28)
 
 ## Breaking changes

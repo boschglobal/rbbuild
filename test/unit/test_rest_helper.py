@@ -21,7 +21,9 @@ _ANY_URL = re.compile(r'^https://example\.test/')
 
 
 def _helper(tmp_path):
-    return RESTHelper(tmp_path, progress_cb=lambda *_: None)
+    return RESTHelper(
+        tmp_path, session=requests.Session(), progress_cb=lambda *_: None
+    )
 
 
 # By default, any HTTP error - including 404 - raises. An invalid
@@ -64,6 +66,18 @@ def test_download_file_success(tmp_path, requests_mock):
     assert result.read_bytes() == b'data'
 
 
+def test_download_file_uses_given_session(tmp_path):
+    session = MagicMock()
+    session.get.return_value.__enter__.return_value = MagicMock(
+        ok=True, headers={}, iter_content=lambda chunk_size: [b'data']
+    )
+    helper = RESTHelper(tmp_path, session=session, progress_cb=lambda *_: None)
+
+    helper.download_file(_URL, headers={}, auth=None)
+
+    session.get.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # Services built on RESTHelper
 # ---------------------------------------------------------------------------
@@ -84,6 +98,7 @@ def _make_artifactory(tmp_path, channel_type='rbbuild'):
         user=None,
         credentials=None,
         op_mode=MagicMock(),
+        truststore=False,
     )
 
 
@@ -150,6 +165,7 @@ def test_url_service_get_component_404_raises(tmp_path, requests_mock):
         auth_method=AuthMethod.NONE,
         cache=MagicMock(),
         credentials=None,
+        truststore=False,
     )
     pkg = Package(name='pkg', version='1.0')
     pkg.url = _URL

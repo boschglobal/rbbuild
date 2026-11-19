@@ -90,6 +90,24 @@ def test_manager_auth_method_invalid_raises(factory):
         factory(_service_config(**{'auth-method': 'oauth'}))
 
 
+@pytest.mark.parametrize('factory', _FACTORIES)
+def test_manager_truststore_undefined_is_false(factory):
+    provider = factory(_service_config())
+    assert provider.call_args.kwargs['truststore'] is False
+
+
+@pytest.mark.parametrize('factory', _FACTORIES)
+def test_manager_truststore_from_config(factory):
+    provider = factory(_service_config(truststore=True))
+    assert provider.call_args.kwargs['truststore'] is True
+
+
+@pytest.mark.parametrize('factory', _FACTORIES)
+def test_manager_truststore_invalid_raises(factory):
+    with pytest.raises(SyntaxError, match='invalid truststore'):
+        factory(_service_config(truststore='yes'))
+
+
 def test_ci_manager_without_user_config():
     provider = MagicMock()
     manager = CIManager(

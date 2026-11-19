@@ -44,6 +44,7 @@ class Artifactory(Repository):
         user: str,
         credentials: str,
         op_mode: OperationMode,
+        truststore: bool,
     ):
         Repository.__init__(
             self,
@@ -54,6 +55,7 @@ class Artifactory(Repository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.CHUNK_BLOCK_SIZE = 65536
         self.temp_folder = temp_folder
@@ -79,7 +81,7 @@ class Artifactory(Repository):
                     'Content-Type' : 'text/plain' }
         url = f'{self.url}api/search/aql'
 
-        resp = requests.post(url=url, headers=headers, auth=self.auth, data=query)
+        resp = self.session.post(url=url, headers=headers, auth=self.auth, data=query)
         resp.raise_for_status()
 
         return resp.json()
@@ -97,7 +99,7 @@ class Artifactory(Repository):
         manifest_path = None
 
         if self.channel.type == 'rbbuild':
-            rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb)
+            rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb, session=self.session)
             url = f'{self.url}{resource_prefix}/{manifest_fname}'
             manifest_path = rest_helper.download_file(
                 url=url,
@@ -198,7 +200,7 @@ class Artifactory(Repository):
 
     def get_versions(self, name: str) -> List[str]:
         url = f'{self.url}{build_path("api/storage", self.channel.repository, self.channel.root_path, name)}?list&deep=0&listFolders=1'
-        resp = requests.get(url, headers=self.headers, auth=self.auth)
+        resp = self.session.get(url, headers=self.headers, auth=self.auth)
         if resp.status_code == 404:
             return []
 
@@ -218,7 +220,7 @@ class Artifactory(Repository):
 
     def list_package_names(self, pattern: str) -> Iterator[str]:
         url = f'{self.url}{build_path("api/storage", self.channel.repository, self.channel.root_path)}?list&deep=0&listFolders=1'
-        resp = requests.get(url, headers=self.headers, auth=self.auth)
+        resp = self.session.get(url, headers=self.headers, auth=self.auth)
         resp.raise_for_status()
 
         data = resp.json()
@@ -236,7 +238,7 @@ class Artifactory(Repository):
     # Return <version>/<manifest-filename>
     def list_manifests(self, pkgname: str) -> Iterator[str]:
         url = f'{self.url}{build_path("api/storage", self.channel.repository, self.channel.root_path, pkgname)}?list&deep=1'
-        resp = requests.get(url, headers=self.headers, auth=self.auth)
+        resp = self.session.get(url, headers=self.headers, auth=self.auth)
         resp.raise_for_status()
 
         data = resp.json()
@@ -247,7 +249,7 @@ class Artifactory(Repository):
 
     def exists(self, resource: str , dry_run: bool):
         url = f'{self.url}{resource}'
-        resp = requests.head(url=url, headers=self.headers, auth=self.auth)
+        resp = self.session.head(url=url, headers=self.headers, auth=self.auth)
         if resp.status_code == 404:
             return False
 
@@ -261,7 +263,7 @@ class Artifactory(Repository):
         component: Component,
     ) -> Path:
         resource = build_path(self.channel.repository, self.channel.root_path, pkg.name, pkg.version, component.filename)
-        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb)
+        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb, session=self.session)
         url = f'{self.url}{resource}'
         localfile = rest_helper.download_file(
             url=url,
@@ -316,7 +318,7 @@ class Artifactory(Repository):
                 f'{name}-{version} is already published to channel "{self.channel.name}"'
             )
 
-        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb)
+        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb, session=self.session)
         url = f'{self.url}{resource}'
 
         checksum = component.checksum
@@ -372,7 +374,7 @@ class Artifactory(Repository):
         else:
             msg = f'\r[{term.green("*")}] {localfile.name}'
 
-        resp = requests.post(url=url, headers=self.headers, auth=self.auth, data=None)
+        resp = self.session.post(url=url, headers=self.headers, auth=self.auth, data=None)
         resp.raise_for_status()
 
         term.info(msg)
@@ -387,7 +389,7 @@ class Artifactory(Repository):
         resource = build_path(self.channel.repository, self.channel.root_path, name, version)
         url = f'{self.url}{resource}'
 
-        resp = requests.delete(url=url, headers=self.headers, auth=self.auth)
+        resp = self.session.delete(url=url, headers=self.headers, auth=self.auth)
         resp.raise_for_status()
         term.info(f'[{term.green("*")}] Deleted {term.cyan(url)}')
 

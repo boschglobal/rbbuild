@@ -14,10 +14,16 @@ from rbbuild.librbb.term import term
 
 
 class RESTHelper:
-    def __init__(self, tmpdir: Path, progress_cb: Callable[[int, int], None] = term.print_download_progress):
+    def __init__(
+        self,
+        tmpdir: Path,
+        session: requests.Session,
+        progress_cb: Callable[[int, int], None] = term.print_download_progress,
+    ):
         self.tmpdir = tmpdir
         self.CHUNK_BLOCK_SIZE = 65536
         self.progress_cb = progress_cb
+        self.session = session
 
 
     def download_file(
@@ -33,7 +39,7 @@ class RESTHelper:
         urlp = urlparse(url)
         localfile = self.tmpdir / Path(urlp.path).name
 
-        with requests.get(url=url, headers=headers, auth=auth, stream=True) as resp:
+        with self.session.get(url=url, headers=headers, auth=auth, stream=True) as resp:
             if not resp.ok:
                 localfile.unlink(missing_ok=True)
                 if missing_ok and resp.status_code == 404:
@@ -72,7 +78,7 @@ class RESTHelper:
                 yield chunk
 
         with open(localfile, 'rb') as fd:
-            resp = requests.put(
+            resp = self.session.put(
                 url=url,
                 headers=headers,
                 auth=auth,

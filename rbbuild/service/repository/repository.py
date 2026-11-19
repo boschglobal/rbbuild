@@ -42,6 +42,7 @@ class Repository(RemoteService, metaclass=ABCMeta):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         RemoteService.__init__(
             self,
@@ -49,6 +50,7 @@ class Repository(RemoteService, metaclass=ABCMeta):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.cache=cache
         self.channel=channel

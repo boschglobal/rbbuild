@@ -16,11 +16,11 @@ from rbbuild.service.remote_service import AuthMethod
 
 
 def _jenkins(key='EXAMPLE'):
-    return Jenkins(key=key, url='https://jenkins.example.com/', auth_method=AuthMethod.NONE, user=None, credentials=None)
+    return Jenkins(key=key, url='https://jenkins.example.com/', auth_method=AuthMethod.NONE, user=None, credentials=None, truststore=False)
 
 
 def _github_actions(key='EXAMPLE'):
-    return GitHubActions(key=key, url='', auth_method=AuthMethod.NONE, user=None, credentials=None)
+    return GitHubActions(key=key, url='', auth_method=AuthMethod.NONE, user=None, credentials=None, truststore=False)
 
 
 def test_jenkins_job_url_from_build_url_env():

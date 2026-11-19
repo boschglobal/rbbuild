@@ -19,7 +19,7 @@ from rbbuild.librbb.term import term
 from rbbuild.package.component import Component
 from rbbuild.package.package import Package
 
-from rbbuild.service.remote_service import AuthMethod
+from rbbuild.service.remote_service import AuthMethod, truststore_from_config
 from rbbuild.service.utility import version_sort_function
 
 from .repository import Repository
@@ -98,6 +98,7 @@ class RepositoryManager:
             auth_method = AuthMethod.from_config(config, channel.remote_service),
             user = user.get('user'),
             credentials = user.get('credentials'),
+            truststore = truststore_from_config(config, channel.remote_service),
             cache = self._cache_provider(
                 channel = channel,
             ),

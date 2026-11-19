@@ -157,12 +157,7 @@ configuration, see [Managing Project Profiles](#managing-project-profiles).
 |                              | url                          | https://example.com/             | Optional. Default `package.supplier.url`                |
 | `[profile.issuetracker.KEY]` |                              | `[profile.issuetracker.PROJ]`    | Multiple issue tracker services can be configured       |
 |                              | remote\_service              | rb\_jira\_standard               | Reference to remote service name                        |
-| `[profile.channels.NAME]`    |                              | `[profile.channels.development]` |                                                    |
-|                              | type                         | rbbuild                          | Type of the channel: rbbuild, plain or pypi, or a type provided by a plugin package (e.g., csi) |
-|                              | remote\_service              | rb\_artifactory                  | Reference to remote service name                        |
-|                              | repository                   | sample-development-local         | E.g., Artifactory repo                                  |
-|                              | root\_path                   | components                       | Artifactory path in repository                          |
-|                              | redirect\_repos              | sample-testing                   | (only rbbuild type) If not found, search in next repository |
+| `[profile.channels.NAME]`    |                              | `[profile.channels.development]` | See [Repository services](repository-services.md#channels) |
 | `[profile.oss.NAME]`         |                              | `[profile.oss.project]`          | OSS scan service (see [rbfoss](rbfoss.md))              |
 |                              | type                         | fossid                           | Required. Currently only fossid is supported            |
 |                              | remote\_service              | rb\_fossid                       | Reference to remote service name                        |
@@ -187,9 +182,9 @@ overrides the shared one.
 | Section                      | Entry                        | Value (example)                  | Comment                                                 |
 |------------------------------|------------------------------|----------------------------------|---------------------------------------------------------|
 | `[profile.services.NAME]`    |                              | `[profile.services.git]`         |                                                         |
-|                              | type                         | artifactory                      | Valid values: artifactory, local\_file\_service, github, bitbucket, jira, jenkins, fossid, or a type provided by a plugin package |
+|                              | type                         | artifactory                      | Valid values: artifactory, s3, google\_drive, local\_file\_service, github, bitbucket, jira, jenkins, fossid, or a type provided by a plugin package |
 |                              | url                          | https://path.to/                 | Service URL                                             |
-|                              | auth-method                  | bearer-token                     | none (default), basic, or bearer-token. See below       |
+|                              | auth-method                  | bearer-token                     | none (default), basic, bearer-token, or oauth2 (google\_drive only). See below |
 |                              | truststore                   | true                             | (Optional) Verify TLS certificates with the operating system trust store. Default: false |
 |                              | credentials                  | AKCp.....i9m                     | Used as APIKEY or password. Only in user config!        |
 |                              | user                         | jdoe                             | (Optional) e.g., for services that rely on basic auth   |
@@ -207,6 +202,9 @@ are sent as basic authentication.
 With `truststore = true`, rbbuild verifies the TLS certificate of the service with the trust
 store of the operating system (using the Python `truststore` module) instead of the CA bundle
 shipped with Python. Use this for services that rely on corporate CA certificates.
+
+The service types `artifactory`, `local_file_service`, `s3` and `google_drive`, and the settings of
+channels are described in [Repository services](repository-services.md).
 
 The remote service TOML file name can be freely chosen, however, it is good
 practice to use `<service-name>.toml` as file name to avoid clashes with other

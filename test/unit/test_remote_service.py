@@ -58,6 +58,12 @@ def test_invalid_auth_method():
         _make_jira(auth_method='not_an_auth_method')
 
 
+# Only services that set up the token themselves accept OAUTH2
+def test_oauth2_is_rejected_by_unsupported_service():
+    with pytest.raises(TypeError, match='Jira does not support auth-method oauth2'):
+        _make_jira(AuthMethod.OAUTH2)
+
+
 # AuthMethod.from_config: 'auth-method' of a [profile.services.<name>] table
 def test_from_config_undefined_is_none():
     assert AuthMethod.from_config({'type': 'jira'}, 'svc') == AuthMethod.NONE
@@ -69,6 +75,7 @@ def test_from_config_undefined_is_none():
     ('bearer-token', AuthMethod.BEARER_TOKEN),
     ('bearer_token', AuthMethod.BEARER_TOKEN),
     ('BEARER-TOKEN', AuthMethod.BEARER_TOKEN),
+    ('oauth2',       AuthMethod.OAUTH2),
 ])
 def test_from_config_values(value, expected):
     assert AuthMethod.from_config({'auth-method': value}, 'svc') == expected

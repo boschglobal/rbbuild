@@ -9,6 +9,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from dependency_injector import providers
+
 from rbbuild.core.channel import Channel
 from rbbuild.package.component import Component
 from rbbuild.package.component_specifier import ComponentSpecifier
@@ -603,6 +605,61 @@ def test_service_unavailable_type_raises_lookup_error():
 
     with pytest.raises(LookupError, match='"csi".*not available'):
         repoman.service(channel)
+
+
+class _WithOptions:
+    def __init__(self, options=None, user_options=None, **kwargs):
+        self.options = options
+        self.user_options = user_options
+
+
+class _WithoutOptions:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+
+def _make_repoman_with_providers(services_config, user_config, **providers):
+    return RepositoryManager(
+        deps_parser=MagicMock(),
+        selected_channel=MagicMock(),
+        target_toolchain=MagicMock(),
+        op_mode=MagicMock(),
+        cache_provider=MagicMock(),
+        services_config=services_config,
+        user_config=user_config,
+        toolchains_config={},
+        **providers,
+    )
+
+
+# The profile settings of the service and the user configuration entries
+# are passed separately to types that declare 'options' / 'user_options'.
+def test_service_passes_options_to_types_declaring_them():
+    repoman = _make_repoman_with_providers(
+        {'svc': {'type': 'withopts', 'url': 'https://x/', 'region': 'eu'}},
+        {'svc': {'user': 'u', 'refresh-token': 'rt'}},
+        withopts=providers.Factory(_WithOptions),
+    )
+
+    result = repoman.service(MagicMock(remote_service='svc'))
+
+    assert result.options['region'] == 'eu'
+    assert 'refresh-token' not in result.options
+    assert result.user_options['refresh-token'] == 'rt'
+
+
+# Plugins written without 'options' keep working
+def test_service_does_not_pass_options_to_other_types():
+    repoman = _make_repoman_with_providers(
+        {'svc': {'type': 'plain', 'url': 'https://x/'}},
+        {'svc': {}},
+        plain=providers.Factory(_WithoutOptions),
+    )
+
+    result = repoman.service(MagicMock(remote_service='svc'))
+
+    assert 'options' not in result.kwargs
+    assert 'user_options' not in result.kwargs
 
 
 # ---------------------------------------------------------------------------

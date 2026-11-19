@@ -13,7 +13,7 @@ SPDX-License-Identifier: MIT
 aspects of the whole product life-cycle. The suite comes with convenient user
 interfaces for various tasks:
 * Configuration and credential management for web services, including:
-  Artifactory, Jira, Bitbucket, GitHub, FossID and SonarQube.
+  Artifactory, Amazon S3, Google Drive, Jira, Bitbucket, GitHub, FossID and SonarQube.
 * Easy-to-use CLI wrappers for different tools, e.g., package/dependency
   managers (uv, pip, npm, Conan), build tools (GCC, clang, MSVC, Python build),
   documentation tools (Sphinx, Pandoc), and test tools (CTest, PyTest).
@@ -118,7 +118,7 @@ rbbuild              # set up and build (same as rbbuild -sb)
 rbbuild -T           # run tests and generate reports (test + coverage)
 rbbuild --sca        # run static code analysis
 rbbuild -p           # package the results
-rbbuild --publish    # upload the packages to PyPI or Artifactory
+rbbuild --publish    # upload the packages to PyPI or to a channel (Artifactory, S3, ...)
 ```
 
 The steps in the middle can be repeated as often as needed:
@@ -128,7 +128,7 @@ flowchart LR
     G["rbbuild -g<br/>scaffold"]
     F["rbbuild -FI<br/>dependencies"]
     P["rbbuild -p<br/>package"]
-    U["rbbuild --publish<br/>PyPI / Artifactory"]
+    U["rbbuild --publish<br/>PyPI / channel"]
 
     subgraph dev ["Develop (repeat as needed)"]
         S["rbbuild -s<br/>setup"]
@@ -217,6 +217,7 @@ Authors and Maintainers of this repository are:
 * [pkq](documentation/user-manual/pkq.md)
 * [promote](documentation/user-manual/promote.md)
 * [rbbconf](documentation/user-manual/rbbconf.md)
+* [repository services](documentation/user-manual/repository-services.md): Artifactory, local file service, Amazon S3 and Google Drive
 * [rbfoss](documentation/user-manual/rbfoss.md)
 * [bash completion](documentation/user-manual/bash_completion.md)
 * [rbbuild in comparison to other tools](documentation/user-manual/comparison.md)

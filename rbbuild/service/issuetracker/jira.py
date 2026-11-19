@@ -5,8 +5,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import requests
-
 from urllib.parse import quote_plus
 from typing import Iterator
 
@@ -23,6 +21,7 @@ class Jira(IssueTracker):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         IssueTracker.__init__(
             self,
@@ -31,6 +30,7 @@ class Jira(IssueTracker):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
 
 
@@ -53,7 +53,7 @@ class Jira(IssueTracker):
 
         url = f'{self.api_endpoint_url}issue/{issue}?fields=issuelinks'
         headers = {**self.headers, 'Content-Type': 'application/json'}
-        resp = requests.get(url=url, headers=headers, auth=self.auth)
+        resp = self.session.get(url=url, headers=headers, auth=self.auth)
 
         if resp.ok:
             return resp.json()
@@ -74,7 +74,7 @@ class Jira(IssueTracker):
         jql_safe = quote_plus(jql)  # convert to safe URL params
         url = f'{self.api_endpoint_url}search?jql={jql_safe}'
         headers = {**self.headers, 'Content-Type': 'application/json'}
-        resp = requests.get(url=url, headers=headers, auth=self.auth)
+        resp = self.session.get(url=url, headers=headers, auth=self.auth)
         if not resp.ok:
             error_messages = '\t\n'.join(resp.json().get('errorMessages', []))
             raise RuntimeError(f'GET {url} failed:\t\n{error_messages}')
@@ -90,7 +90,7 @@ class Jira(IssueTracker):
     def release_versions(self) -> Iterator[Release]:
         url = f'{self.api_endpoint_url}project/{self.key}/versions'
         headers = {**self.headers, 'Content-Type': 'application/json'}
-        resp = requests.get(url=url, headers=headers, auth=self.auth)
+        resp = self.session.get(url=url, headers=headers, auth=self.auth)
         for data in resp.json():
             yield Release(
                 name=data.get('name', ''),

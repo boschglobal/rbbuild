@@ -21,6 +21,7 @@ class Jenkins(CIService):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         CIService.__init__(
             self,
@@ -29,6 +30,7 @@ class Jenkins(CIService):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
 
 

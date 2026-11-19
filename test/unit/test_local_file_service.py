@@ -20,6 +20,7 @@ def _make_service(url):
         manifest=MagicMock(),
         temp_folder=MagicMock(),
         op_mode=MagicMock(),
+        truststore=False,
     )
 
 

@@ -6,9 +6,8 @@
 # SPDX-License-Identifier: MIT
 
 import functools
-import requests
 
-from .remote_service import RemoteService, AuthMethod
+from .remote_service import RemoteService, AuthMethod, truststore_from_config
 
 
 class LicenseDB(RemoteService):
@@ -32,13 +31,16 @@ class LicenseDB(RemoteService):
             auth_method=AuthMethod.NONE,
             user=None,
             credentials=None,
+            truststore=truststore_from_config(
+                remote_service, remote_service_name
+            ),
         )
 
 
     @functools.cached_property
     def _all_licenses(self) -> dict:
          url = f'{self.url}api/v2/licenses'
-         resp = requests.get(url, headers=self.headers)
+         resp = self.session.get(url, headers=self.headers)
          resp.raise_for_status()
          return resp.json()
 

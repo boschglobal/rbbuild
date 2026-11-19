@@ -14,7 +14,9 @@ from typing import Iterator
 
 from rbbuild.librbb.term import term
 
-from rbbuild.service.remote_service import RemoteService, AuthMethod
+from rbbuild.service.remote_service import (
+    RemoteService, AuthMethod, truststore_from_config,
+)
 
 
 @dataclass
@@ -72,6 +74,7 @@ class IssueTracker(RemoteService, metaclass=ABCMeta):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         RemoteService.__init__(
             self,
@@ -79,6 +82,7 @@ class IssueTracker(RemoteService, metaclass=ABCMeta):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.key = key
 
@@ -142,5 +146,6 @@ class IssueTrackerManager:
             auth_method = AuthMethod.from_config(service_config, trackerid),
             user = user.get('user'),
             credentials = user.get('credentials'),
+            truststore = truststore_from_config(service_config, trackerid),
         )
 

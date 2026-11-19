@@ -266,7 +266,9 @@ mytype = 'mypackage.myrepo:MyRepository'
 * The target must be a subclass of `rbbuild.service.repository.repository.Repository`.
   It is created with the keyword arguments `channel`, `cache`, `manifest`, `temp_folder`,
   `url`, `auth_method` (from `auth-method` of the remote service, `none` if undefined),
-  `user`, `credentials`, and `op_mode`.
+  `user`, `credentials`, `op_mode`, and `truststore` (from `truststore` of the remote
+  service, `False` if undefined). Plugins must accept `truststore` and pass it to
+  `Repository.__init__`; HTTP requests must be sent with `self.session` to honor it.
 * Optionally, the class attribute `display_name` is shown in the GUI.
 * If a profile refers to a service type that no installed package provides, rbbuild
   reports that the service type is not available.
@@ -306,6 +308,7 @@ class MyRepository(Repository):
         user: str,
         credentials: str,
         op_mode: OperationMode,
+        truststore: bool,
     ):
         Repository.__init__(
             self,
@@ -316,6 +319,7 @@ class MyRepository(Repository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.temp_folder = temp_folder
         self.op_mode = op_mode

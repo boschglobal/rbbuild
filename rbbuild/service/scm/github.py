@@ -5,7 +5,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import requests
 import re
 
 from typing import Iterator
@@ -24,6 +23,7 @@ class GitHub(GitRepository):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         GitRepository.__init__(
             self,
@@ -31,6 +31,7 @@ class GitHub(GitRepository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.project = project
         self.repository = repository
@@ -45,7 +46,7 @@ class GitHub(GitRepository):
 
         url = f'{self.url}repos/{self.project}/{self.repository}/compare/{since}...{until}?per_page={limit}'
         headers = {**self.headers, 'Content-Type': 'application/json'}
-        resp = requests.get(url=url, headers=headers, auth=self.auth)
+        resp = self.session.get(url=url, headers=headers, auth=self.auth)
 
         if resp.ok:
             for cmt in resp.json().get('commits', {}):

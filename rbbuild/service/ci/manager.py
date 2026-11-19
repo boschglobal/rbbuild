@@ -8,7 +8,9 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
-from rbbuild.service.remote_service import RemoteService, AuthMethod
+from rbbuild.service.remote_service import (
+    RemoteService, AuthMethod, truststore_from_config,
+)
 
 
 # Abstract class implemented by CI system instances (Jenkins, GitHub Actions, ...).
@@ -20,6 +22,7 @@ class CIService(RemoteService, metaclass=ABCMeta):
         auth_method: AuthMethod,
         user: str,
         credentials: str,
+        truststore: bool,
     ):
         RemoteService.__init__(
             self,
@@ -27,11 +30,12 @@ class CIService(RemoteService, metaclass=ABCMeta):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.key = key
 
 
-    
+
     @abstractmethod
     def job_url(self) -> Optional[str]:
         pass
@@ -74,4 +78,5 @@ class CIManager:
             auth_method=AuthMethod.from_config(service_config, serviceid),
             user=user.get('user'),
             credentials=user.get('credentials'),
+            truststore=truststore_from_config(service_config, serviceid),
         )

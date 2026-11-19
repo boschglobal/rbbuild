@@ -6,7 +6,6 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import requests
 import time
 
 from dataclasses import dataclass
@@ -71,6 +70,7 @@ class FossID(RemoteService):
         credentials: str,
         project_org_prefix: str,
         op_mode: OperationMode,
+        truststore: bool,
     ):
         RemoteService.__init__(
             self,
@@ -78,6 +78,7 @@ class FossID(RemoteService):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.name = name
         self.project_org_prefix = project_org_prefix
@@ -120,7 +121,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') == '1':
@@ -151,7 +152,7 @@ class FossID(RemoteService):
         #    payload['data']['jira_project_key']: next(iter(self.settings.profile.jira))
 
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') != '1':
@@ -174,7 +175,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') == '1':
@@ -209,7 +210,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') != '1':
@@ -235,7 +236,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') != '1':
@@ -254,7 +255,7 @@ class FossID(RemoteService):
         }
         json_data = json.dumps(payload)
         while True:
-            resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+            resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
             resp.raise_for_status()
             data = resp.json()
             if data.get('status') != '1':
@@ -302,7 +303,7 @@ class FossID(RemoteService):
             payload['data']['specific_project'] = fossid_scan.project_entry.project_code
 
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         if data.get('status') != '1':
@@ -324,7 +325,7 @@ class FossID(RemoteService):
         }
         json_data = json.dumps(payload)
         while True:
-            resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+            resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
             resp.raise_for_status()
             data = resp.json()
             if data.get('status') != '1':
@@ -352,7 +353,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         return bool(data.get('status', False))
@@ -369,7 +370,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
 
@@ -406,7 +407,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         return bool(data.get('status', False))
@@ -440,7 +441,7 @@ class FossID(RemoteService):
         else:
             raise NotImplementedError(f'FossID report_type {report_type} is not implemented')
 
-        resp = requests.post(url=self.api_endpoint_url, headers=headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=headers, data=json_data)
         resp.raise_for_status()
 
         if report_type == 'xlsx':
@@ -463,7 +464,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         return bool(data.get('status', False))
@@ -480,7 +481,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         return bool(data.get('status', False))
@@ -500,7 +501,7 @@ class FossID(RemoteService):
             }
         }
         json_data = json.dumps(payload)
-        resp = requests.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
+        resp = self.session.post(url=self.api_endpoint_url, headers=self.headers, data=json_data)
         resp.raise_for_status()
         data = resp.json()
         return bool(data.get('status', False))

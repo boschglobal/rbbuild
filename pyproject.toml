@@ -23,6 +23,7 @@ maintainers = [
 dependencies = [
     'uv>=0.11.32',
     'requests>=2.34.0',
+    'truststore>=0.10',
     'ninja>=1.13',
     'cmake>=4.4',
     'packageurl-python>=0.13.4',

@@ -69,6 +69,7 @@ def fossid(app_test):
         user='test_user',
         credentials='test_credentials',
         project_org_prefix=fossid_cfg['project_org_prefix'],
+        truststore=False,
         op_mode = OperationMode(
             debug=False,
             verbose=False,
@@ -94,5 +95,6 @@ def jira(app_test):
         auth_method=AuthMethod.BEARER_TOKEN,
         user='test_user',
         credentials='test_credentials',
+        truststore=False,
     )
 

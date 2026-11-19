@@ -33,6 +33,7 @@ class URLService(Repository):
         auth_method: str,
         cache,
         credentials,
+        truststore: bool,
     ):
         Repository.__init__(
             self,
@@ -43,6 +44,7 @@ class URLService(Repository):
             auth_method=auth_method,
             user=user,
             credentials=credentials,
+            truststore=truststore,
         )
         self.temp_folder = temp_folder
         self.CHUNK_BLOCK_SIZE = 65536
@@ -93,7 +95,7 @@ class URLService(Repository):
         pkg: Package,
         component: Component,
     ) -> Path:
-        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb)
+        rest_helper = RESTHelper(self.tmpdir, progress_cb=self.progress_cb, session=self.session)
         localfile = rest_helper.download_file(
             url=pkg.url,
             headers=self.headers,

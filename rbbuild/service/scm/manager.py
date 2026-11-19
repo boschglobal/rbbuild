@@ -7,7 +7,7 @@ import re
 
 from urllib.parse import urlparse
 
-from rbbuild.service.remote_service import AuthMethod
+from rbbuild.service.remote_service import AuthMethod, truststore_from_config
 
 from .git_repository import GitRepository
 
@@ -67,6 +67,7 @@ class SCMManager:
             auth_method  = AuthMethod.from_config(config, remote_service),
             user         = user.get('user'),
             credentials  = user.get('credentials'),
+            truststore   = truststore_from_config(config, remote_service),
         )
 
 

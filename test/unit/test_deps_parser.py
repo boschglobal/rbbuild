@@ -427,6 +427,22 @@ def test_ignore_comments(deps_parser):
     assert pkg.version_constraints is None
 
 
+def test_localversion_attribute(deps_parser):
+    pkg = deps_parser.parse_item('mypkg>1.0 localversion=rbbuild.1234')
+    assert pkg.name == 'mypkg'
+    assert pkg.localversion == 'rbbuild.1234'
+    assert '1.5' in pkg.version_constraints
+
+
+def test_localversion_attribute_default(deps_parser):
+    assert deps_parser.parse_item('mypkg').localversion is None
+
+
+def test_localversion_attribute_dict_entry(deps_parser):
+    pkg = deps_parser.parse_item({'entry': 'mypkg', 'localversion': 'rbbuild.1234'})
+    assert pkg.localversion == 'rbbuild.1234'
+
+
 # --- walk(): error handling ---
 
 # deps_json_to_config() raises SyntaxError when a section key does not start with '/'.

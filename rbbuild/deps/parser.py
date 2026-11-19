@@ -140,7 +140,7 @@ class DepsParser:
     #                            package_install_action=COPY|DEFAULT|channel=<name>|
     #                            toolchain=<name>|components=<name>[,<name>]*|
     #                            suffixes=<name>[,<name>]*|copyright=<name>|url=<url>|
-    #                            purl=<purl>|branch=<name>
+    #                            purl=<purl>|branch=<name>|localversion=<name>
     #    <url>                 - a valid web URL starting with http:// or https://
     #    <purl>                - a valid PackageURL string, e.g.,
     #                              pkg:generic/mypkg@1.2.3.4?download_url=http://bosch.de/path/to/file

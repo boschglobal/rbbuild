@@ -263,6 +263,7 @@ Each dependency entry can carry one or more *configuration flags*:
 | `traverse` | Defaults to `1`. With `traverse=0`, the package itself is installed, but none of its transitive dependencies are resolved, installed or passed on to consumers. Implies `build_only`. Use this when the transitive dependencies are irrelevant or provided by other means. `no_traverse` is still accepted as an alias of `traverse=0`; specifying both with contradicting values is an error. | `traverse=0` |
 | `installdir` | Installation directory relative to `staging/<tcid>` when using `rbbuild -I`. Defaults to the namespace name. | `installdir=licenses` |
 | `package_install_action` | Overrides the default install action. Available values: `copy` (copy file as-is into `installdir`). Default behavior: archive formats (`tar.gz`, `zip`, …) are extracted; `rpm` and `sha512` files are ignored. | `package_install_action=copy` |
+| `localversion` | Only versions whose PEP 440 local segment (the part after `+`) matches exactly are considered, e.g., development packages built from a ticket branch. Combinable with version constraints. Development versions (`.devN`) sort below their release, so `>=1.2.3.4` does not match `1.2.3.4.dev1+rbbuild.1234`. | `localversion=rbbuild.1234` |
 
 
 ### Dependency Resolution

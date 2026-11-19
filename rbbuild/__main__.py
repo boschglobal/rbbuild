@@ -70,8 +70,6 @@ class RBBuildMain:
         ci_key: str          = Provide[Application.config.settings.ci],
         supplier: dict       = Provide[Application.config.profile.supplier],
     ) -> Package:
-        if channel.development:
-            metadata.development_version = 1
         mypkg = Package(name=metadata.name, version=str(metadata.version))
         mypkg.branch = metadata.branch
         mypkg.channel = channel

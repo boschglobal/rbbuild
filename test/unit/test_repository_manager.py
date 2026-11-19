@@ -249,6 +249,49 @@ def test_search_applies_component_specifier_flags():
     assert results[0].components[0].traverse is False
 
 
+# With localversion set, only versions with exactly this local segment are
+# returned; versions without a local segment and legacy versions are skipped.
+def test_search_filters_by_localversion():
+    channel = _make_channel()
+    service = MagicMock()
+    service.channel = channel
+    service.list_versions.return_value = [
+        '1.2.3.4.dev1+rbbuild.1234',
+        '1.2.3.4.dev1+rbbuild.5678',
+        '1.2.3.4',
+        '1.2.3-master.4',
+    ]
+    service.find_package.side_effect = lambda qpkg: Package(name='mypkg', version=qpkg.version)
+
+    repoman = _make_repoman(service, toolchains_config={})
+    pkg = _make_pkg(version=None, toolchain='linux-native')
+    pkg.localversion = 'rbbuild.1234'
+
+    results = list(repoman.search(pkg=pkg, channel=channel))
+
+    assert [r.version for r in results] == ['1.2.3.4.dev1+rbbuild.1234']
+
+
+def test_search_localversion_combined_with_constraints():
+    channel = _make_channel()
+    service = MagicMock()
+    service.channel = channel
+    service.list_versions.return_value = [
+        '2.0.0.1.dev1+rbbuild.1234',
+        '1.0.0.1.dev1+rbbuild.1234',
+    ]
+    service.find_package.side_effect = lambda qpkg: Package(name='mypkg', version=qpkg.version)
+
+    repoman = _make_repoman(service, toolchains_config={})
+    pkg = _make_pkg(version=None, toolchain='linux-native')
+    pkg.version_constraints = '>=1.5'
+    pkg.localversion = 'rbbuild.1234'
+
+    results = list(repoman.search(pkg=pkg, channel=channel))
+
+    assert [r.version for r in results] == ['2.0.0.1.dev1+rbbuild.1234']
+
+
 def test_search_keeps_default_traverse_for_matching_components():
     channel = _make_channel()
     service = MagicMock()

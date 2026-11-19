@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from rbbuild import data_path
 from rbbuild.core.paths import Paths
+from rbbuild.service.issuetracker.issuetracker_manager import Issue
 
 
 class Metadata:
@@ -24,6 +25,7 @@ class Metadata:
         paths: Paths,
         source_path: Path=None,
         toolchain = None,
+        development: bool = False,
     ):
         self.config = project_config if project_config else {}
         self.paths = paths
@@ -34,7 +36,7 @@ class Metadata:
             self.source_path = paths.source
 
         self.toolchain = toolchain
-        self.development_version = 0
+        self.development_version = 1 if development else 0
 
 
     @property
@@ -163,7 +165,7 @@ class Metadata:
     def version(self) -> Version:
         version_string = f'{self.major}.{self.minor}.{self.revision}.{self.build}'
         if self.development_version:
-            local = re.sub(r'[\W_]', '.', self.branch)  # replace all special characters with .
+            local = re.sub(r'[\W_]', '.', Issue.branch_abbreviated(self.branch))  # replace all special characters with .
             local = re.sub(r'^\.*', '', local)          # must not start with '.'
             local = re.sub(r'\.*$', '', local)          # must not end with '.'
             local = re.sub(r'\.+', '.', local)          # must not contain multiple '.' in sequence

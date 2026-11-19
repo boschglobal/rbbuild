@@ -5,7 +5,9 @@
 
 import pytest
 
-from rbbuild.service.utility import bump_conflict_version, version_sort_function
+from rbbuild.service.utility import (
+    bump_conflict_version, matches_localversion, version_sort_function,
+)
 
 # ---------------------------------------------------------------------------
 # version_sort_function — sort ordering
@@ -68,6 +70,24 @@ def test_sort_pep508_prerelease_order():
     result = sorted(versions, key=version_sort_function, reverse=True)
     # 'rc' > 'b' > 'a' lexicographically → rc > b > a
     assert result == ['1.0.0rc1', '1.0.0b1', '1.0.0a1']
+
+
+# ---------------------------------------------------------------------------
+# matches_localversion
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize('version, localversion, expected', [
+    ('1.2.3.4.dev1+rbbuild.1234', 'rbbuild.1234', True),
+    ('1.2.3.4.dev1+rbbuild.1234', 'RBBUILD.1234', True),
+    ('1.2.3.4.dev1+rbbuild.1234', 'rbbuild-1234', True),
+    ('1.2.3.4.dev1+rbbuild.1234', 'rbbuild', False),
+    ('1.2.3.4.dev1+rbbuild.1234', 'rbbuild.12', False),
+    ('1.2.3.4.dev1+rbbuild.1234', 'rbbuild.*', False),
+    ('1.2.3.4', 'rbbuild.1234', False),
+    ('1.2.3-master.4', 'rbbuild.1234', False),
+])
+def test_matches_localversion(version, localversion, expected):
+    assert matches_localversion(version, localversion) is expected
 
 
 # ---------------------------------------------------------------------------

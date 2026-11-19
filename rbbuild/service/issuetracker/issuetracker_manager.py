@@ -34,12 +34,14 @@ class Issue:
         return term.yellow(self.status)
 
 
-    # Extract and normalize the Jira issue key embedded in a branch name.
+    # Extract and normalize the issue key embedded in a branch name.
     # Example: 'PROJECT-1234-some-description' -> 'PROJECT-1234'
+    #          '6-some-description' (GitHub) -> '6'
     # Any character that is not alphanumeric, '-', or '_' is replaced with '_'.
     @staticmethod
     def branch_abbreviated(branch: str) -> str:
         if branch:
+            branch = re.sub(r'^(\d+)-.*$', r'\1', branch)
             branch = re.sub(r'(\w+-\d+).*$', r'\1', branch)
             branch_out = ''
             for c in branch:

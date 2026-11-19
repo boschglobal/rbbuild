@@ -73,6 +73,14 @@ The `--max-query-items` option (default: 10) limits the number of versions shown
 pkq boost>1.79.2900 --list --max-query-items 5
 ```
 
+Development packages carry a PEP 440 local version derived from the branch
+(e.g., `1.2.3.4.dev1+rbbuild.1234`). The `localversion` attribute lists only
+exactly matching versions:
+
+```
+pkq "mypkg localversion=rbbuild.1234" --list
+```
+
 ## Mode 3: Package detail view
 
 When an exact (pinned) version is specified with `--list`, pkq shows detailed

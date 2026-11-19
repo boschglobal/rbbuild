@@ -20,6 +20,7 @@ class PackageContainer(containers.DeclarativeContainer):
         project_config = config.project,
         paths          = core.paths,
         toolchain      = core.toolchain,
+        development    = core.channel.provided.development,
     )
 
     parser = providers.Singleton(

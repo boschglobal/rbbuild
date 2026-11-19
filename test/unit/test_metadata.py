@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+import pytest
+
+from dependency_injector import providers
 from unittest.mock import MagicMock, patch
 
 from rbbuild.core.paths import Paths
@@ -95,6 +98,44 @@ def test_metadata_revision_auto_computed(tmp_path):
 def test_metadata_build_defaults_to_zero(tmp_path):
     m = Metadata({}, paths=_make_paths(tmp_path))
     assert m.build == 0
+
+
+# The local version of a development version uses the abbreviated branch.
+@pytest.mark.parametrize('branch, expected', [
+    ('RBBUILD-1234-my-ticket', '1.2.3.4.dev1+rbbuild.1234'),
+    ('6-allow-filtering-by-branch-name', '1.2.3.4.dev1+6'),
+    ('feature/some-work', '1.2.3.4.dev1+feature.some.work'),
+])
+def test_metadata_development_version_local(tmp_path, branch, expected):
+    config = {
+        'version_major': '1',
+        'version_minor': '2',
+        'version_revision': '3',
+        'version_build': '4',
+        'branch': branch,
+    }
+    m = Metadata(config, paths=_make_paths(tmp_path), development=True)
+    assert str(m.version) == expected
+
+
+@pytest.mark.parametrize('development', [True, False])
+def test_metadata_development_from_selected_channel(app, development):
+    channel = MagicMock(development=development)
+    with app.core.channel.override(providers.Object(channel)):
+        m = app.package.metadata()
+    assert m.version.is_devrelease is development
+
+
+def test_metadata_release_version_has_no_dev_or_local(tmp_path):
+    config = {
+        'version_major': '1',
+        'version_minor': '2',
+        'version_revision': '3',
+        'version_build': '4',
+        'branch': 'RBBUILD-1234-my-ticket',
+    }
+    m = Metadata(config, paths=_make_paths(tmp_path))
+    assert str(m.version) == '1.2.3.4'
 
 
 # ---------------------------------------------------------------------------

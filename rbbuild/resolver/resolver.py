@@ -11,7 +11,7 @@ from rbbuild.package.package import Package
 from rbbuild.core.runtime_settings import OperationMode
 from rbbuild.librbb.term import term
 from rbbuild.service.repository.manager import RepositoryManager
-from rbbuild.service.utility import version_sort_function
+from rbbuild.service.utility import matches_localversion, version_sort_function
 
 
 # Result of collect(): collected packages, conflicts (if any) and warnings
@@ -51,6 +51,15 @@ class Resolver:
     def _warn(self, warnings: List[str], message: str):
         if self._verbose or message not in warnings:
             warnings.append(message)
+
+
+    @staticmethod
+    def _version_allowed(pkg_in: Package, version: str) -> bool:
+        if pkg_in.version_constraints and version not in pkg_in.version_constraints:
+            return False
+        if pkg_in.localversion:
+            return matches_localversion(version, pkg_in.localversion)
+        return True
 
 
     # transitive: if set to True, transitive dependencies will also be returned
@@ -127,15 +136,11 @@ class Resolver:
                 handled.add(key)
                 candidates = requests.pop(key)
                 versions = sorted(candidates, key=version_sort_function, reverse=True)
-                if pkg_in.version_constraints:
-                    allowed = [v for v in versions if v in pkg_in.version_constraints]
-                    if not allowed:
-                        problems.append(self._version_conflict_message(
-                            pkg_in, candidates[versions[0]]))
-                        continue
-                    versions_ok = allowed
-                else:
-                    versions_ok = versions
+                versions_ok = [v for v in versions if self._version_allowed(pkg_in, v)]
+                if not versions_ok:
+                    problems.append(self._version_conflict_message(
+                        pkg_in, candidates[versions[0]]))
+                    continue
 
                 winner = candidates[versions_ok[0]]
                 if len(versions) > 1:
@@ -166,11 +171,9 @@ class Resolver:
 
             if key in all_packages:
                 pkg = all_packages[key]
-                # version check?
-                if pkg_in.version_constraints:
-                    if pkg.version not in pkg_in.version_constraints:
-                        problems.append(self._version_conflict_message(pkg_in, pkg))
-                        continue
+                if not self._version_allowed(pkg_in, pkg.version):
+                    problems.append(self._version_conflict_message(pkg_in, pkg))
+                    continue
                 packages[key] = pkg
                 continue
 

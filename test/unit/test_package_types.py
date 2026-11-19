@@ -474,3 +474,20 @@ def test_package_merge_version_constraints():
     pkg1.merge(pkg2)
     assert '1.5' in pkg1.version_constraints
     assert '2.1' not in pkg1.version_constraints
+
+
+def test_package_merge_localversion_missing_on_self():
+    pkg1 = Package(name='mypkg')
+    pkg2 = Package(name='mypkg')
+    pkg2.localversion = 'rbbuild.1234'
+    pkg1.merge(pkg2)
+    assert pkg1.localversion == 'rbbuild.1234'
+
+
+def test_package_merge_localversion_mismatch_raises():
+    pkg1 = Package(name='mypkg')
+    pkg1.localversion = 'rbbuild.1234'
+    pkg2 = Package(name='mypkg')
+    pkg2.localversion = 'rbbuild.5678'
+    with pytest.raises(RuntimeError, match='Local version mismatch'):
+        pkg1.merge(pkg2)

@@ -103,6 +103,7 @@ class Package:
 
         self._version_constraints: SpecifierSet      = None   # Python PEP 508 constraints, e.g., >1.0
         self.branch                                  = None
+        self.localversion: str                       = None
         self._purl                                   = None
         self.url                                     = None
         self._licenses: List[License]                = []
@@ -294,6 +295,14 @@ class Package:
                 pass
             else:
                 raise RuntimeError(f'Branch mismatch detected. Failed to merge package {term.bright_white(other.branch)} into {term.bright_white(self.branch)}')
+
+        if self.localversion != other.localversion:
+            if not self.localversion:
+                self.localversion = other.localversion
+            elif not other.localversion:
+                pass
+            else:
+                raise RuntimeError(f'Local version mismatch detected. Failed to merge package {term.bright_white(other.localversion)} into {term.bright_white(self.localversion)}')
 
         # version_constraints
         if not self.version_constraints:

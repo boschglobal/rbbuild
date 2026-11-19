@@ -938,6 +938,34 @@ def test_run_wildcard_top_level_constraint_violated_by_all_nested():
     assert 'Version conflict' in result.problems[0]
 
 
+# A wildcard top-level entry with a localversion adopts the nested version
+# with a matching local segment.
+def test_run_wildcard_localversion_adopts_matching_nested_version():
+    a = _pkg('a', '1.0')
+    a.dependencies = _deps(_pkg('c', '1.0.0.1.dev1+rbbuild.1234'))
+    b = _pkg('b', '1.0')
+    b.dependencies = _deps(_pkg('c', '2.0.0.1'))
+    c_in = _pkg('c', '')
+    c_in.localversion = 'rbbuild.1234'
+
+    result = _run(_resolver([a], [b]), _pkg('a', '1.0'), _pkg('b', '1.0'), c_in)
+
+    assert not result.problems
+    assert result.packages['c'].version == '1.0.0.1.dev1+rbbuild.1234'
+
+
+def test_run_wildcard_localversion_violated_by_all_nested():
+    a = _pkg('a', '1.0')
+    a.dependencies = _deps(_pkg('c', '2.0.0.1'))
+    c_in = _pkg('c', '')
+    c_in.localversion = 'rbbuild.1234'
+
+    result = _run(_resolver([a]), _pkg('a', '1.0'), c_in)
+
+    assert len(result.problems) == 1
+    assert 'Version conflict' in result.problems[0]
+
+
 # 7) The version is taken from the runtime path regardless of the order of
 # the entries.
 def test_run_runtime_path_wins_version_regardless_of_order():

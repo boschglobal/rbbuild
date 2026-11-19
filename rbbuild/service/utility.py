@@ -5,7 +5,7 @@
 
 import re
 
-from packaging.version import Version
+from packaging.version import InvalidVersion, Version
 
 
 # The following method is used as sort key for version searches (e.g., pkq -l).
@@ -21,6 +21,16 @@ def version_sort_function(ver: str) -> list:
         except ValueError:
             items.append((1, part))         # (1, s) — strings sort after integers
     return items
+
+
+# Exact match of the PEP 440 local version segment (the part after '+').
+# PEP 440 normalizes the segment to lowercase with '.' as separator.
+def matches_localversion(version: str, localversion: str) -> bool:
+    try:
+        local = Version(version).local
+    except InvalidVersion:
+        return False
+    return local == re.sub(r'[-_]', '.', localversion.lower())
 
 
 # Join path segments, skipping empty parts (e.g. an optional root_path)

@@ -207,6 +207,10 @@ def test_branch_abbreviated_jira_ticket():
     assert Issue.branch_abbreviated('PROJECT-1234-some-description') == 'PROJECT-1234'
 
 
+def test_branch_abbreviated_github_issue():
+    assert Issue.branch_abbreviated('6-allow-filtering-by-branch-name') == '6'
+
+
 # --- licenses setter ---
 
 

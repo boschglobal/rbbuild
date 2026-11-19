@@ -20,7 +20,7 @@ from rbbuild.package.component import Component
 from rbbuild.package.package import Package
 
 from rbbuild.service.remote_service import AuthMethod, truststore_from_config
-from rbbuild.service.utility import version_sort_function
+from rbbuild.service.utility import matches_localversion, version_sort_function
 
 from .repository import Repository
 
@@ -243,6 +243,9 @@ class RepositoryManager:
                             raise
                 except Exception:
                     raise
+
+            if pkg.localversion and not matches_localversion(version, pkg.localversion):
+                continue
 
             toolchain = pkg.toolchain
 

@@ -3,12 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import json
 import shutil
 
 from abc import ABCMeta, abstractmethod
 from copy import copy
 from pathlib import Path
-from typing import Callable, Iterator, List
+from typing import Callable, Iterator, List, Tuple
 
 from rbbuild.core.channel import Channel
 from rbbuild.core.toolchain import Toolchain
@@ -127,6 +128,45 @@ class Repository(RemoteService, metaclass=ABCMeta):
     #
     # Common repository methods
     #
+
+    # True if copy() on this service can copy to a channel of the other
+    # service. Services with more settings than the URL must override it.
+    def can_copy_to(self, other: 'Repository') -> bool:
+        return type(self) is type(other) and self.url == other.url
+
+
+    # Writes a manifest for a 'plain' channel from (filename, checksum) pairs
+    def plain_manifest(
+        self,
+        name: str,
+        version: str,
+        files: List[Tuple[str, str]],
+    ) -> Path:
+        manifest_data = {
+            'json_version': 5,
+            'package': {
+                'version_package': name,
+                'version_string': version,
+                'components': [],
+            }
+        }
+        for filename, checksum in files:
+            suffix = None
+            if '.' in filename:
+                _, suffix = filename.rsplit('.', maxsplit=1)
+            manifest_data['package']['components'].append({
+                'name':     filename,
+                'suffix':   suffix,
+                'filename': filename,
+                'checksum': checksum,
+            })
+
+        localfile = self.tmpdir / f'{name}-{version}-manifest.json'
+        with open(localfile, 'w') as fd:
+            json.dump(manifest_data, fd, indent=4)
+
+        return localfile
+
 
     def list_versions(self, name: str, version: str) -> List[str]:
         if version:

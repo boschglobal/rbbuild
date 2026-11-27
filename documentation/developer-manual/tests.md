@@ -63,6 +63,8 @@ The test suite is split into two directories:
 | `test_metadata.py` | `Metadata` — name (config, git), version components, branch (config, git) |
 | `test_version.py` | `__version__`, `RBBuildVersion`, `version_sort_function` |
 | `test_artifactory.py` | `Artifactory.upload_component()` version-conflict detection |
+| `test_s3.py`, `test_sigv4.py` | `S3` repository against a mocked endpoint; AWS Signature Version 4 (documented AWS examples) |
+| `test_google_drive.py`, `test_oauth2.py` | `GoogleDrive` repository against a fake Drive API; OAuth 2.0 refresh-token authentication |
 | `test_bash_completion.py` | Option lists of the bash completion script match the argparse parsers |
 | `test_build.py` | PEP 517 build backend `rbbuild.buildsystem.build` — wheels, source distributions, entry points |
 | `test_ci_manager.py` | `job_url()` of the CI services (Jenkins, GitHub Actions) |
@@ -82,7 +84,7 @@ The test suite is split into two directories:
 | `test_rbbuild_gui.py` | `build_application()` of `rbbuild-gui` |
 | `test_rbbuild_tools.py` | Tool entries of the SBOM (`rbbuild` and the profile supplier) |
 | `test_repository_manager.py` | `RepositoryManager` — search, toolchain fallback, service types |
-| `test_rest_helper.py` | HTTP download helper |
+| `test_rest_helper.py` | HTTP download and upload helper |
 | `test_ruff.py` | `Ruff` build tool — selection and generation of the ruff configuration, `--sca` call |
 | `test_sphinx.py` | Sphinx documentation setup |
 | `test_toolchain_setting.py` | `default_toolchain_setting` — spellings of the default toolchain in `rbbconf -s` |

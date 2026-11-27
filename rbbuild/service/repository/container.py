@@ -6,9 +6,11 @@
 from dependency_injector import containers, providers
 
 from .artifactory import Artifactory
+from .google_drive import GoogleDrive
 from .local_file_storage import LocalFileStorage, LocalFileService
 from .manager import RepositoryManager
 from .plugins import load_repository_plugins
+from .s3 import S3
 from .url_service import URLService
 
 
@@ -58,6 +60,20 @@ class RepositoryContainer(containers.DeclarativeContainer):
         temp_folder = core.temp_folder,
     )
 
+    s3 = providers.Factory(
+        S3,
+        manifest    = package.manifest,
+        temp_folder = core.temp_folder,
+        op_mode     = config.op_mode,
+    )
+
+    google_drive = providers.Factory(
+        GoogleDrive,
+        manifest    = package.manifest,
+        temp_folder = core.temp_folder,
+        op_mode     = config.op_mode,
+    )
+
     # https://refactoring.guru/design-patterns/facade
     repoman = providers.Singleton(
         RepositoryManager,
@@ -73,6 +89,8 @@ class RepositoryContainer(containers.DeclarativeContainer):
         **{
             'artifactory':        artifactory.provider,
             'local_file_service': local_file_service.provider,
+            's3':                 s3.provider,
+            'google_drive':       google_drive.provider,
             'url':                url.provider,
             **_plugin_providers(config, core, package),
         },

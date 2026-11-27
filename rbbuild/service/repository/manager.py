@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import inspect
 import json
 import re
 
@@ -92,7 +93,7 @@ class RepositoryManager:
                 f'Install the package that provides it.'
             )
 
-        return provider(
+        kwargs = dict(
             channel = channel,
             url = config.get('url'),
             auth_method = AuthMethod.from_config(config, channel.remote_service),
@@ -103,6 +104,18 @@ class RepositoryManager:
                 channel = channel,
             ),
         )
+
+        # Types only get 'options' (profile settings of the service) and
+        # 'user_options' (user config entries) if they declare them, so that
+        # plugins written without them keep working.
+        cls = getattr(provider, 'cls', None)
+        parameters = inspect.signature(cls).parameters if isinstance(cls, type) else {}
+        if 'options' in parameters:
+            kwargs['options'] = config
+        if 'user_options' in parameters:
+            kwargs['user_options'] = user
+
+        return provider(**kwargs)
 
 
     #  This method searches for packages specified by Package constraints
@@ -385,12 +398,11 @@ class RepositoryManager:
         src_service = self.service(pkg.channel)
         dst_service = self.service(destination_channel)
 
-        # Use server-side copy when both ends share the same service type and
-        # the same base URL (i.e. same Artifactory instance).
+        # Use server-side copy when the source service can copy to the
+        # destination service (e.g., same Artifactory instance).
         can_copy = (
-            type(src_service) is type(dst_service)
-            and hasattr(src_service, 'copy')
-            and src_service.url == dst_service.url
+            hasattr(src_service, 'copy')
+            and src_service.can_copy_to(dst_service)
         )
 
         # --- data components ---

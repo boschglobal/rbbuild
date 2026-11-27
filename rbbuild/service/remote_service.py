@@ -21,6 +21,7 @@ class AuthMethod(Enum):
     NONE = 0
     BASIC = 1
     BEARER_TOKEN = 2
+    OAUTH2 = 3
 
 
     # Reads 'auth-method' of a [profile.services.<name>] table; none if undefined.
@@ -66,6 +67,10 @@ class TruststoreAdapter(HTTPAdapter):
 # This abstract class defines the interfaces that must be implemented
 # by a remote service
 class RemoteService(metaclass=ABCMeta):
+    # Services that set up self.auth for AuthMethod.OAUTH2 themselves
+    oauth2_supported = False
+
+
     def __init__(
         self,
         url: str,
@@ -98,6 +103,11 @@ class RemoteService(metaclass=ABCMeta):
             self.auth = (user, credentials)
             if not user and not credentials:
                 raise RuntimeError(auth_err_msg)
+        elif auth_method == AuthMethod.OAUTH2:
+            if not self.oauth2_supported:
+                raise TypeError(
+                    f'{self.__class__.__name__} does not support auth-method oauth2'
+                )
         elif auth_method == AuthMethod.NONE:
             pass
         else:

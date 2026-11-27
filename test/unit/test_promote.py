@@ -675,6 +675,10 @@ class _FakeService:
         self.manifest = MagicMock()
 
 
+    def can_copy_to(self, other):
+        return type(self) is type(other) and self.url == other.url
+
+
     def resource_url(self, pkg: Package):
         return f'{self.url}{pkg.name}-{pkg.version}'
 
@@ -802,4 +806,30 @@ def test_repoman_promote_cross_server_uses_download_upload(tmp_path):
 
     src_svc.copy.assert_not_called()
     dst_svc.upload_component.assert_called()
+    assert results[0] is pkg.components[0]
+
+
+# A service that cannot copy to the destination falls back to download + upload.
+def test_repoman_promote_uses_download_upload_if_copy_not_possible(tmp_path):
+    src_ch = _channel('dev')
+    dst_ch = _channel('test')
+    url = 'https://s3.example.com/'
+
+    src_svc = _FakeService(url=url)
+    src_svc.can_copy_to = MagicMock(return_value=False)
+    dst_svc = _FakeService(url=url, tmpdir=tmp_path)
+    dst_svc.manifest.from_package.return_value = {}
+    dst_svc.manifest.make_filename.return_value = 'mypkg-1.0-manifest.json'
+
+    local_comp = Component(name='mypkg', suffix='tar', filename='mypkg-1.0-linux-native.tar.xz',
+                           localpath=tmp_path / 'mypkg-1.0-linux-native.tar.xz')
+    pkg = _make_pkg_with_components(src_ch, 'mypkg-1.0-linux-native.tar.xz')
+
+    repoman = _make_repoman(src_svc, dst_svc, src_ch, dst_ch)
+    repoman.download = MagicMock(return_value=iter([local_comp]))
+
+    results = list(repoman.promote(pkg, dst_ch))
+
+    src_svc.can_copy_to.assert_called_once_with(dst_svc)
+    src_svc.copy.assert_not_called()
     assert results[0] is pkg.components[0]

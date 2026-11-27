@@ -433,6 +433,34 @@ def test_copy_with_force_replaces_existing_file(tmp_path, drive):
     assert drive.files_in(ver) == {'pkg-1.0.tar': b'new'}
 
 
+def test_copy_failure_keeps_existing_file_when_forced(tmp_path, drive, requests_mock):
+    drive.add('pkg-1.0.tar', _add_version(drive), content=b'new')
+    ver = _add_destination(drive, b'old')
+    requests_mock.post(
+        re.compile(rf'{_API}/drive/v3/files/[^/?]+/copy'),
+        status_code=500,
+        json={'error': {'message': 'backend error'}},
+    )
+
+    with pytest.raises(requests.exceptions.HTTPError, match='backend error'):
+        _copy(_make_drive(tmp_path, force=True))
+
+    assert drive.files_in(ver) == {'pkg-1.0.tar': b'old'}
+
+
+def test_copy_reports_failed_removal_of_previous_file(tmp_path, drive, requests_mock):
+    drive.add('pkg-1.0.tar', _add_version(drive), content=b'new')
+    _add_destination(drive, b'old')
+    requests_mock.delete(
+        re.compile(rf'{_API}/drive/v3/files/[^/?]+'),
+        status_code=403,
+        json={'error': {'message': 'forbidden'}},
+    )
+
+    with pytest.raises(RuntimeError, match='previous file.*forbidden'):
+        _copy(_make_drive(tmp_path, force=True))
+
+
 def test_copy_dry_run_changes_nothing(tmp_path, drive):
     drive.add('pkg-1.0.tar', _add_version(drive), content=b'data')
 
@@ -465,3 +493,21 @@ def test_resource_url(tmp_path):
 
     assert _make_drive(tmp_path, root_path='comp').resource_url(pkg) == (
         'gdrive://root1/comp/pkg/1.0')
+
+
+# Server-side copy uses the account and Shared Drive of the source service
+def test_can_copy_to_service_with_same_account(tmp_path):
+    other = _make_drive(tmp_path, url='https://www.googleapis.com/')
+
+    assert _make_drive(tmp_path).can_copy_to(other) is True
+
+
+@pytest.mark.parametrize('kwargs', [
+    {'user': 'other'},
+    {'credentials': 'other'},
+    {'refresh_token': 'other'},
+    {'options': {'drive-id': 'shared1'}},
+    {'url': 'https://drive.example.test/'},
+])
+def test_cannot_copy_to_service_with_different_settings(tmp_path, kwargs):
+    assert _make_drive(tmp_path).can_copy_to(_make_drive(tmp_path, **kwargs)) is False

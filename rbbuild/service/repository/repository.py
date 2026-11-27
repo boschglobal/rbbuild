@@ -129,6 +129,12 @@ class Repository(RemoteService, metaclass=ABCMeta):
     # Common repository methods
     #
 
+    # True if copy() on this service can copy to a channel of the other
+    # service. Services with more settings than the URL must override it.
+    def can_copy_to(self, other: 'Repository') -> bool:
+        return type(self) is type(other) and self.url == other.url
+
+
     # Writes a manifest for a 'plain' channel from (filename, checksum) pairs
     def plain_manifest(
         self,

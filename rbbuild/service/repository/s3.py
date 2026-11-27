@@ -92,6 +92,7 @@ class S3(Repository):
         )
         region = (options or {}).get('region', _DEFAULT_REGION)
         self.auth = SigV4Auth(user, credentials, region)
+        self._identity = (user, credentials, region)
         self._base_url = url.rstrip('/')
         self.temp_folder = temp_folder
         self.op_mode = op_mode
@@ -100,6 +101,11 @@ class S3(Repository):
     @property
     def tmpdir(self):
         return self.temp_folder.path
+
+
+    # A server-side copy is signed with the credentials of this service only
+    def can_copy_to(self, other: Repository) -> bool:
+        return super().can_copy_to(other) and self._identity == other._identity
 
 
     def _object_url(self, repository: str, key: str = '') -> str:

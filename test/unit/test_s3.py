@@ -25,7 +25,8 @@ _NS = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
 def _make_s3(tmp_path, chtype='rbbuild', root_path='root', options=None,
-             force=False, dry_run=False, url=f'{_BASE}/'):
+             force=False, dry_run=False, url=f'{_BASE}/',
+             user='AKID', credentials='SECRET'):
     channel = MagicMock(
         remote_service='svc', repository='bkt', root_path=root_path, type=chtype)
     channel.name = 'development'
@@ -40,8 +41,8 @@ def _make_s3(tmp_path, chtype='rbbuild', root_path='root', options=None,
         temp_folder=MagicMock(path=tmp_path),
         url=url,
         auth_method=AuthMethod.NONE,
-        user='AKID',
-        credentials='SECRET',
+        user=user,
+        credentials=credentials,
         op_mode=MagicMock(force=force, dry_run=dry_run),
         truststore=False,
         options=options,
@@ -375,3 +376,18 @@ def test_url_with_trailing_slash_and_path_prefix(tmp_path):
 
     assert s3.resource_url(Package(name='pkg', version='1.0')) == (
         'https://minio.example.test:9000/s3/bkt/root/pkg/1.0')
+
+
+# Server-side copy is signed with the credentials of the source service
+def test_can_copy_to_service_with_same_account_and_region(tmp_path):
+    assert _make_s3(tmp_path).can_copy_to(_make_s3(tmp_path)) is True
+
+
+@pytest.mark.parametrize('kwargs', [
+    {'user': 'OTHER'},
+    {'credentials': 'OTHER'},
+    {'options': {'region': 'eu-central-1'}},
+    {'url': 'https://other.example.test/'},
+])
+def test_cannot_copy_to_service_with_different_settings(tmp_path, kwargs):
+    assert _make_s3(tmp_path).can_copy_to(_make_s3(tmp_path, **kwargs)) is False

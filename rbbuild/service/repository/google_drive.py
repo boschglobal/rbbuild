@@ -89,6 +89,9 @@ class GoogleDrive(Repository):
         )
         self._base_url = (url or _DEFAULT_URL).rstrip('/')
         self._drive_id = options.get('drive-id')
+        self._identity = (
+            user, credentials, refresh_token, self._drive_id, self._base_url
+        )
         self._folders = {}
         self.temp_folder = temp_folder
         self.op_mode = op_mode
@@ -97,6 +100,11 @@ class GoogleDrive(Repository):
     @property
     def tmpdir(self):
         return self.temp_folder.path
+
+
+    # A server-side copy uses the account and Shared Drive of this service only
+    def can_copy_to(self, other: Repository) -> bool:
+        return type(self) is type(other) and self._identity == other._identity
 
 
     def resource_url(self, pkg: Package) -> str:
@@ -370,13 +378,20 @@ class GoogleDrive(Repository):
             term.info(f'\r[{term.yellow("x")}] {filename} ({term.cyan("dry run")})')
             return True
 
-        for item in existing:
-            self._api('DELETE', f'drive/v3/files/{item["id"]}')
         self._api(
             'POST',
             f'drive/v3/files/{source[0]["id"]}/copy',
             json={'name': filename, 'parents': [dest_folder]},
         )
+        # Drive allows equal names: replace only after the copy succeeded
+        try:
+            for item in existing:
+                self._api('DELETE', f'drive/v3/files/{item["id"]}')
+        except requests.exceptions.HTTPError as e:
+            raise RuntimeError(
+                f'{filename} was copied, but the previous file could not be '
+                f'deleted from the destination (duplicate name): {e}'
+            ) from e
 
         term.info(f'\r[{term.green("*")}] {filename}')
         return True

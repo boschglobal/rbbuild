@@ -72,7 +72,9 @@ Publishing a version that already exists in the channel is a version conflict fo
 types, see [Version folders](../developer-manual/architecture.md#version-folders).
 
 [promote](promote.md) copies packages inside the service if the source and destination channel
-use the same service type and URL. Otherwise, each component is downloaded and uploaded to the
+use the same service type and the same account: the same URL for Artifactory, additionally the
+same access key, secret key and region for S3, and the same OAuth client, refresh token and
+Shared Drive for Google Drive. Otherwise, each component is downloaded and uploaded to the
 destination.
 
 
@@ -245,19 +247,95 @@ Shared Drive, use the ID of the drive itself or of a folder inside it, and set `
 With the channel above, a package version is stored in
 `<root folder>/rbbuild/components/<name>/<version>/`.
 
-### Obtaining the OAuth credentials
+### Setting up Google Drive
 
-1. In the [Google Cloud console](https://console.cloud.google.com/auth/clients), enable the
-   Google Drive API and create an OAuth client of type "Desktop app". This gives the client
-   ID and the client secret.
-2. Authorize the client once for the scope `https://www.googleapis.com/auth/drive`, for
-   example with the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-   (configured to use your own OAuth client, with *Access type* set to offline). The
-   response contains the refresh token.
+#### 1. Create the OAuth credentials
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), select or create a
+   project and enable the *Google Drive API*.
+2. Configure the OAuth consent screen: user type *External*, publishing status *Testing*,
+   and add your Google account as test user.
+3. Under [Clients](https://console.cloud.google.com/auth/clients), create an OAuth client of
+   type "Desktop app". This gives the client ID and the client secret. If the OAuth
+   Playground reports `redirect_uri_mismatch` in the next step, create a client of type
+   "Web application" instead and add `https://developers.google.com/oauthplayground` as
+   authorized redirect URI.
+4. In the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/), open the
+   settings (gear icon), select *Use your own OAuth credentials* and enter the client ID and
+   secret. Set *Access type* to offline.
+5. Authorize the scope `https://www.googleapis.com/auth/drive` and exchange the
+   authorization code for tokens. Copy the *refresh token*.
 
 See [OAuth 2.0 for desktop apps](https://developers.google.com/identity/protocols/oauth2/native-app)
 for details. A refresh token is valid until it is revoked. If the consent screen of the
 Google Cloud project is in status "Testing", it expires after 7 days.
+
+#### 2. Create the Drive folder
+
+Create a folder in Google Drive for the packages. Its ID is the last part of the folder URL
+`https://drive.google.com/drive/folders/<ID>`.
+
+#### 3. Configure rbbuild
+
+Create a profile in the user configuration (see
+[Managing Project Profiles](rbbconf.md#managing-project-profiles)). The profile imports the
+`standalone` profile and adds the Drive channel.
+
+`~/.config/rbbuild/profiles/gdrive/gdrive.toml`:
+
+```toml
+[profile]
+import = 'standalone'
+
+[settings]
+channel = 'gdrive'
+
+[profile.channels.gdrive]
+type           = 'rbbuild'
+remote_service = 'google_mydrive'
+repository     = '<ID of the folder>'
+root_path      = 'rbbuild/components'
+```
+
+`~/.config/rbbuild/profiles/gdrive/remote-services/google_mydrive.toml`:
+
+```toml
+[profile.services.google_mydrive]
+type        = 'google_drive'
+auth-method = 'oauth2'
+```
+
+Add the credentials of step 1 to the user configuration `~/.config/rbbuild/rbbuild.toml`, as
+shown in the example above. Do not add them to a profile or to a repository.
+`rbbconf -l profiles` lists the new profile.
+
+#### 4. Test reading and writing
+
+Upload a small file as package `hello` (write), show it (read), and download it as a
+dependency of another folder (read):
+
+```shell
+echo hello > hello.txt
+rbbuild -P gdrive --upload gdrive:hello@1.0.0 hello.txt
+
+pkq -P gdrive --channel gdrive hello@1.0.0 -t none-any --list
+
+mkdir consumer; cd consumer
+```
+
+Create `rbbuild.toml` in the folder `consumer`:
+
+```toml
+[dependencies]
+deps = ['gdrive:hello-1.0.0 toolchain=none-any']
+```
+
+```shell
+rbbuild -P gdrive -FI
+```
+
+The file `hello.txt` is now installed in `staging/none-any`. In Google Drive, the files are in
+`<folder>/rbbuild/components/hello/1.0.0/`.
 
 ### Permissions and limitations
 
